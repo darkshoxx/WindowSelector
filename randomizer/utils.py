@@ -19,6 +19,7 @@ LIST_OF_WRONG_WINDOWS = [
     "MSCTFIME UI",
     "Default IME",
     "DOSBox Status Window",
+    ""
 ]
 # required for usage of api.OpenProcess()
 QUERY_INFO = con.PROCESS_QUERY_INFORMATION
