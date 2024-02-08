@@ -1,16 +1,24 @@
 Want the following logic:
-- boot program, probably with graphical interface
-- button load previous data from config file?
-- button alternative 1 "select all game windows"
-    - make list of all previously selected game windows
-        - make user confirm sublist
-        - option to repeat (too many games)
+X boot program, probably with graphical interface
+X button load previous data from config file?
+X button alternative 1 "select all game windows"
+    X make list of all previously selected game windows
+        X make user confirm sublist
+        X option to repeat (too many games)
+    X scrollbar
+    - checkbox for pre-filtering
+    X refresh
+    X searchbar
+- make wrapper around destroy function to add ABORT
 - button alternative 2 "search active processes for names"
+    - find current active window
+    - add to list when changes
+    - ignore itself
 - confirm final game list
 - option: choose ordering for cycle-button
     - choose button for cycle for and back
-- option: choose individual button for each window.
-    - choose button/combination for each window.
+X option: choose individual button for each window.
+    X choose button/combination for each window.
 - store in config file! (In case of crashes NOT for repeats, because of changing PIDs)
 - run, with status window of log of current and previous selections
     - button to show key mapping

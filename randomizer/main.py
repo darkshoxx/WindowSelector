@@ -1,10 +1,12 @@
-from tkinter import BOTTOM, END, LEFT, MULTIPLE, RIGHT, SINGLE, TOP, Entry, Label, Listbox, Text, Tk, Button, Frame
+from tkinter import BOTTOM, END, LEFT, MULTIPLE, RIGHT, SINGLE, TOP, Entry, Label, Listbox, Scrollbar, Text, Tk, Button, Frame
 from utils import LIST_OF_WRONG_WINDOWS, check_for_active_handles, get_all_handles, get_exe_from_process_id, get_process_id_from_handle, gui
+from runner import the_client
 from functools import partial
 import keyboard, pywintypes
 SAMPLE_LIST_1 = ["A","B","C","D","E","F"]
 SAMPLE_LIST_2 = ["Myst", "Myst 2 Riven", "Myst 3 Exile", "7th Guest"]
-
+SHELL = the_client.Dispatch("WScript.Shell")
+ABORT = False
 # Functions
 def get_list_of_exe_windows():
     handles = get_all_handles()
@@ -38,15 +40,15 @@ def delete_from_list(listbox):
     for index in reversed(selected):
         listbox.delete(index)
 
-def remove_unmatched_games(search_entrybox, seach_games_listbox):
+def remove_unmatched_games(search_entrybox, search_games_listbox):
     # get search term
     search_term = search_entrybox.get().lower()
     # find match games
-    good_games = [game for game in seach_games_listbox.get(0,END) if search_term in game.lower()]
+    good_games = [game for game in search_games_listbox.get(0,END) if search_term in game[0].lower()]
     # remove nonmatched windows
-    seach_games_listbox.delete(0, END)
+    search_games_listbox.delete(0, END)
     for game in good_games:
-        seach_games_listbox.insert(0, game)
+        search_games_listbox.insert(0, game)
 
 def store_list_and_destroy_root(listbox, root):
     all_games = listbox.get(0, END)
@@ -73,6 +75,7 @@ def store_list_and_destroy_root(listbox, root):
 
 def switch_to_game(next_game):
     try:
+        SHELL.SendKeys("%")
         gui.SetForegroundWindow(next_game[1])
     except pywintypes.error as e:
         print(e)
@@ -96,11 +99,28 @@ def start_runner():
                 switch_to_game(next_game)
         number_of_active_games = sum([int(value) for value in game_is_alive_dict.values()])
 
+def abort_all(root):
+    global ABORT
+    ABORT = True
+    root.destroy()
 
 
 BUTTON_TO_ACTION_DICT = {}
 EXE_LIST = get_list_of_exe_windows()
 FINAL_GAMES_LIST = []
+
+def make_scrollable_listbox(parent, selectmode=MULTIPLE, side=TOP):
+    listbox_frame = Frame(parent)
+    listbox_frame.pack(side=side, expand=True)
+    the_listbox = Listbox(listbox_frame, selectmode=selectmode)
+    the_listbox.pack(side=LEFT, expand=True)
+    reset_button = Button(listbox_frame, text='Refresh\nList')
+    reset_button.pack(side=RIGHT, fill='y')
+    scrollbar = Scrollbar(listbox_frame, orient='vertical')
+    scrollbar.config(command=the_listbox.yview)
+    scrollbar.pack(side=RIGHT, fill='y')
+    the_listbox.config(yscrollcommand=scrollbar.set)
+    return the_listbox, reset_button
 
 def draw_game_selection_frame():
 
@@ -115,50 +135,65 @@ def draw_game_selection_frame():
     # GDF = listbox + remove + confirm
     game_display_frame = Frame(root)
     game_display_frame.pack(side=BOTTOM, expand=True)
-    games_listbox = Listbox(game_display_frame, selectmode=MULTIPLE)
-    games_listbox.pack(side=TOP)
+    # scrollable listbox
+    games_listbox, games_reset_button = make_scrollable_listbox(game_display_frame)
+    # buttons
     remove_game_button = Button(game_display_frame, text="Delete Game", command=partial(delete_from_list, games_listbox))
-    remove_game_button.pack(side=LEFT)
-    confirm_games_button = Button(game_display_frame, text="Confirm Games", command=partial(store_list_and_destroy_root, games_listbox, root))
-    confirm_games_button.pack(side=RIGHT)
+    remove_game_button.pack(side=LEFT, expand=True)
+    confirm_games_button = Button(game_display_frame, text="Confirm Games", bg='green', command=partial(store_list_and_destroy_root, games_listbox, root))
+    confirm_games_button.pack(side=RIGHT, expand=True)
+    abort_button = Button(game_display_frame, bg='red', text="ABORT ALL!", command=partial(abort_all, root))
+    abort_button.pack(side=RIGHT, expand=True)
 
     # prep = load + adders
     load_frame = Frame(prep_frame)
-    load_frame.pack(side=TOP)
+    load_frame.pack(side=TOP, expand=True)
     load_button = Button(load_frame, text="Load from file", command=None)
-    load_button.pack()
+    load_button.pack(expand=True)
     adder_frame = Frame(prep_frame)
     adder_frame.pack(side=BOTTOM, expand=True)
 
     # adder = left + right
     select_game_by_clicking_frame = Frame(adder_frame)
-    select_game_by_clicking_frame.pack(side=LEFT)
+    select_game_by_clicking_frame.pack(side=LEFT, expand=True)
 
     # left = listbox + buttons
-    click_games_listbox = Listbox(select_game_by_clicking_frame, selectmode=MULTIPLE)
-    click_games_listbox.insert(0,*EXE_LIST)
-    click_games_listbox.pack(side=TOP)
+    click_games_listbox = make_scrollable_searchbox(select_game_by_clicking_frame, content = EXE_LIST)
     add_click_frame_button = Button(select_game_by_clicking_frame, text="Add Game", command=partial(add_games_to_display_list, click_games_listbox, games_listbox))
-    add_click_frame_button.pack(side=LEFT)
+    add_click_frame_button.pack(side=LEFT, expand=True)
     remove_click_frame_button = Button(select_game_by_clicking_frame, text="Remove Game from List", command=partial(delete_from_list, click_games_listbox))
-    remove_click_frame_button.pack(side=RIGHT)
+    remove_click_frame_button.pack(side=RIGHT, expand=True)
 
     # right = search + listbox + buttons
     select_game_by_search_frame = Frame(adder_frame)
-    select_game_by_search_frame.pack(side=RIGHT)
-    search_frame = Frame(select_game_by_search_frame)
-    search_frame.pack(side=TOP)
-    search_entrybox = Entry(search_frame)
-    search_entrybox.pack(side=LEFT)
-    search_games_listbox = Listbox(select_game_by_search_frame, selectmode=SINGLE)
-    search_games_listbox.insert(0,*SAMPLE_LIST_2)
-    search_games_listbox.pack(side=TOP)
-    apply_search_frame_button = Button(search_frame, text="Apply Search", command=partial(remove_unmatched_games, search_entrybox, search_games_listbox))
-    apply_search_frame_button.pack(side=RIGHT)
+    select_game_by_search_frame.pack(side=RIGHT, expand=True)
+    search_games_listbox = make_scrollable_searchbox(select_game_by_search_frame, content= SAMPLE_LIST_2)
     add_search_frame_button = Button(select_game_by_search_frame, text="Add Game", command=partial(add_games_to_display_list, search_games_listbox, games_listbox))
-    add_search_frame_button.pack(side=BOTTOM)
-
+    add_search_frame_button.pack(side=BOTTOM, expand=True)
     root.mainloop()
+
+def refresh_content(listbox, content):
+    listbox.delete(0, END)
+    listbox.insert(0,*content)
+
+def make_scrollable_searchbox(parent, content=None):
+    select_game_by_search_top_frame = Frame(parent)
+    select_game_by_search_top_frame.pack(side=TOP)
+    search_games_listbox, search_games_reset_button = make_scrollable_listbox(select_game_by_search_top_frame, selectmode=SINGLE, side=BOTTOM)
+    if content:
+        refresh_content(search_games_listbox, content)
+    search_games_reset_button.config(command=partial(refresh_content, search_games_listbox, content))
+    make_searchbox(select_game_by_search_top_frame, search_games_listbox)
+    return search_games_listbox
+
+
+def make_searchbox(parent, search_games_listbox):
+    search_frame = Frame(parent)
+    search_frame.pack(side=TOP, expand=True)
+    search_entrybox = Entry(search_frame)
+    search_entrybox.pack(side=LEFT, expand=True)
+    apply_search_frame_button = Button(search_frame, text="Apply Search", command=partial(remove_unmatched_games, search_entrybox, search_games_listbox))
+    apply_search_frame_button.pack(side=RIGHT, expand=True)
 
 def check_uniqueness_and_destroy_root(root):
     all_button_labels = [widget.cget("text") for widget in root.winfo_children() if type(widget) == Button][:-1]
@@ -189,15 +224,17 @@ def draw_button_selection_frame():
         button_button = Button(root, text=index+1, command=None)
         button_button.configure(command=partial(assign_button_to_button, button_button))
         button_button.grid(row=index+1, column=1)
-    confirm_buttons_button = Button(root, text="Confirm Buttons",command=partial(check_uniqueness_and_destroy_root,root))
-    confirm_buttons_button.grid(row=number_of_games+1,column=0,columnspan=2)
-
+    confirm_buttons_button = Button(root, text="Confirm Buttons",  bg='green',command=partial(check_uniqueness_and_destroy_root,root))
+    confirm_buttons_button.grid(row=number_of_games+1,column=0,columnspan=1)
+    abort_button = Button(root, bg='red', text="ABORT ALL!", command=partial(abort_all, root))
+    abort_button.grid(row=number_of_games+1,column=1)
 
     root.mainloop()
 
 if __name__ == "__main__":
     draw_game_selection_frame()
-    draw_button_selection_frame()
+    if not ABORT:
+        draw_button_selection_frame()
     print(BUTTON_TO_ACTION_DICT)
-
-    start_runner()
+    if not ABORT:
+        start_runner()
