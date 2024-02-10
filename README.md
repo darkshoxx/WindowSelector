@@ -6,7 +6,7 @@ Find Windows deliverable in releases section.
 # Self-Build
 requires pyinstall
 execute
-```pyinstaller --onefile --paths=E:\GitHubRepos\WindowSelector\randomizer\ .\randomizer\main.py```
+```pyinstaller --onefile --paths=E:\GitHubRepos\WindowSelector\selector\ .\selector\main.py```
 
 # Requirements
 probably
