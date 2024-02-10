@@ -4,9 +4,6 @@ from runner import the_client
 from functools import partial
 import keyboard, pywintypes
 
-
-SAMPLE_LIST_1 = ["A","B","C","D","E","F"]
-SAMPLE_LIST_2 = ["Myst", "Myst 2 Riven", "Myst 3 Exile", "7th Guest"]
 SHELL = the_client.Dispatch("WScript.Shell")
 ABORT = False
 # Functions
