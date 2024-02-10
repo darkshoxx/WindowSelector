@@ -1,25 +1,40 @@
+"-" TODO "X" DONE "I" Ignore
+
 Want the following logic:
 X boot program, probably with graphical interface
 X button load previous data from config file?
 X button alternative 1 "select all game windows"
+    X MULTI-SELECTION
     X make list of all previously selected game windows
         X make user confirm sublist
         X option to repeat (too many games)
     X scrollbar
-    - checkbox for pre-filtering
+    I checkbox for pre-filtering
     X refresh
     X searchbar
 - make wrapper around destroy function to add ABORT
-- button alternative 2 "search active processes for names"
-    - find current active window
-    - add to list when changes
-    - ignore itself
-- confirm final game list
-- option: choose ordering for cycle-button
-    - choose button for cycle for and back
+X button alternative 2 "search active processes for names"
+    X find current active window
+    X add to list when changes
+    X ignore itself
+X confirm final game list
+I option: choose ordering for cycle-button
+    I choose button for cycle for and back
 X option: choose individual button for each window.
     X choose button/combination for each window.
 - store in config file! (In case of crashes NOT for repeats, because of changing PIDs)
-- run, with status window of log of current and previous selections
-    - button to show key mapping
+X run, with status window of log of current and previous selections
+    I button to show key mapping
+
+- Cleanup
+    - Flake8
+    - Comments
+    - Docstrings
+    - Type Annotations
+    - Proper Readme file
+    - TESTING
+    - Create Class for Games
+    - Create GitHub Action to create Release
+    - Make Tox Bullshot
+    - Precommit YUCK
 

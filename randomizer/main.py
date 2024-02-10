@@ -1,8 +1,10 @@
-from tkinter import BOTTOM, END, LEFT, MULTIPLE, RIGHT, SINGLE, TOP, Entry, Label, Listbox, Scrollbar, Text, Tk, Button, Frame
-from utils import LIST_OF_WRONG_WINDOWS, check_for_active_handles, get_all_handles, get_exe_from_process_id, get_process_id_from_handle, gui
+from tkinter import BOTTOM, END, LEFT, MULTIPLE, RIGHT, TOP, Entry, Label, Listbox, Scrollbar, Tk, Button, Frame
+from utils import LIST_OF_WRONG_WINDOWS, check_for_active_handles, get_all_handles, gui
 from runner import the_client
 from functools import partial
 import keyboard, pywintypes
+
+
 SAMPLE_LIST_1 = ["A","B","C","D","E","F"]
 SAMPLE_LIST_2 = ["Myst", "Myst 2 Riven", "Myst 3 Exile", "7th Guest"]
 SHELL = the_client.Dispatch("WScript.Shell")
@@ -56,22 +58,6 @@ def store_list_and_destroy_root(listbox, root):
     global FINAL_GAMES_LIST
     FINAL_GAMES_LIST = all_games
     root.destroy()
-
-# def wait_for_input(current_handle, list_of_buttons):
-#     pass
-#     press_not_occured = True
-#     while press_not_occured:
-#         if bool(check_for_active_handles([current_handle])):
-#             return (True, "window")
-#         for button in list_of_buttons:
-#             if keyboard.is_pressed(button):
-#                 action = BUTTON_TO_ACTION_DICT[button]
-#                 if action == "next":
-#                     to_next_game()
-#                 elif action == "previous":
-#                     to_previous_game()
-#                 elif type(action) == int:
-#                     go_to_game(action)
 
 def switch_to_game(next_game):
     try:
@@ -167,9 +153,18 @@ def draw_game_selection_frame():
     # right = search + listbox + buttons
     select_game_by_search_frame = Frame(adder_frame)
     select_game_by_search_frame.pack(side=RIGHT, expand=True)
-    search_games_listbox = make_scrollable_searchbox(select_game_by_search_frame, content= SAMPLE_LIST_2)
+    recently_active_windows_list = []
+    search_games_listbox = make_scrollable_searchbox(select_game_by_search_frame, content= recently_active_windows_list)
     add_search_frame_button = Button(select_game_by_search_frame, text="Add Game", command=partial(add_games_to_display_list, search_games_listbox, games_listbox))
     add_search_frame_button.pack(side=BOTTOM, expand=True)
+
+    def update_active_windows_task():
+        game_tuple = get_active_text_and_handle()
+        if game_tuple not in recently_active_windows_list:
+            recently_active_windows_list.append(game_tuple)
+        root.after(1000, update_active_windows_task)
+
+    root.after(1000, update_active_windows_task)
     root.mainloop()
 
 def refresh_content(listbox, content):
@@ -179,7 +174,7 @@ def refresh_content(listbox, content):
 def make_scrollable_searchbox(parent, content=None):
     select_game_by_search_top_frame = Frame(parent)
     select_game_by_search_top_frame.pack(side=TOP)
-    search_games_listbox, search_games_reset_button = make_scrollable_listbox(select_game_by_search_top_frame, selectmode=SINGLE, side=BOTTOM)
+    search_games_listbox, search_games_reset_button = make_scrollable_listbox(select_game_by_search_top_frame, selectmode=MULTIPLE, side=BOTTOM)
     if content:
         refresh_content(search_games_listbox, content)
     search_games_reset_button.config(command=partial(refresh_content, search_games_listbox, content))
@@ -230,6 +225,12 @@ def draw_button_selection_frame():
     abort_button.grid(row=number_of_games+1,column=1)
 
     root.mainloop()
+
+
+def get_active_text_and_handle():
+    handle = gui.GetForegroundWindow()
+    text = gui.GetWindowText(handle)
+    return (text, handle)
 
 if __name__ == "__main__":
     draw_game_selection_frame()
