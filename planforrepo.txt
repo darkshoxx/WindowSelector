@@ -27,14 +27,15 @@ X run, with status window of log of current and previous selections
     I button to show key mapping
 
 - Cleanup
-    - Flake8
+    X Flake8
     - Comments
-    - Docstrings
-    - Type Annotations
+    X Docstrings
+    X Type Annotations
     - Proper Readme file
     - TESTING
     - Create Class for Games
     - Create GitHub Action to create Release
     - Make Tox Bullshot
     - Precommit YUCK
+    - Refactor tkinter stuff
 

@@ -1,3 +1,4 @@
+"""Module for testing getters."""
 import pytest
 from randomizer.utils import (
     filter_handles_by_exe_name,
@@ -10,7 +11,11 @@ from randomizer.utils import (
 
 @pytest.mark.unit
 def test_get_all_handles():
-    """Checks that at least one handle is returned, test invalid direction"""
+    """
+    Checks handles.
+
+    Checks that at least one handle is returned, test invalid direction
+    """
     handles = get_all_handles()
     assert len(handles) > 0
     with pytest.raises(Exception):
@@ -19,8 +24,12 @@ def test_get_all_handles():
 
 @pytest.mark.unit
 def test_filter_by_exe():
-    """Does a second run through the scummvm handles, tests that they
-    belong to scummvm"""
+    """
+    Test for exe filter.
+
+    Does a second run through the scummvm handles, tests that they
+    belong to scummvm.
+    """
     handles = get_all_handles()
     filtered_handles, _, _ = filter_handles_by_exe_name(handles)
     # This will fail there is no ScummVM instance open.

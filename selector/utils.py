@@ -1,3 +1,4 @@
+"""Helper functions."""
 from typing import List
 import win32.win32gui as gui
 import win32process as processes
@@ -27,11 +28,13 @@ VM_READ = con.PROCESS_VM_READ
 
 
 def check_for_active_handles(handle_list: list[int]) -> list:
-    """Helper function to check whether all handles given are still alive
+    """Check whether all handles given are still alive.
+
     Args:
         handle_list (list): list of handles to be checked.
     Returns:
-        list of handles that have died (may be empty)"""
+        list of handles that have died (may be empty)
+    """
     dead_handles = []
     handles = get_all_handles()
     for check_handle in handle_list:
@@ -41,20 +44,26 @@ def check_for_active_handles(handle_list: list[int]) -> list:
 
 
 def write_to_file(string: str, filename: str) -> None:
-    """Helper function to overwrite the text in a file that exists, or create
-    said file with that content
+    """Write contents to file.
+
+    Overwrite the text in a file that exists, or create said file with that
+        content.
     Args:
         string (str): text to be written to file.
         filename (str): string of path to file, or just filename.
     Returns:
-        None"""
+        None
+    """
     with open(filename, mode="w") as file_object:
         file_object.write(string)
 
 
 def get_all_handles() -> List:
-    """Returns a list of all handles. Obtains curent foreground window and
-    iterates through windows in front and behind."""
+    """Return a list of all handles.
+
+    Obtains curent foreground window and
+    iterates through windows in front and behind.
+    """
     # GetForegroundWindow() can return 0 in certain circumstances. In that
     # case it needs to be reloaded.
     current_handle = 0
@@ -69,13 +78,14 @@ def get_all_handles() -> List:
 
 
 def get_half_handles(current_handle: List[int], direction: str) -> List[int]:
-    """Helper function to iterate over all handles in front/behind the active
-    window handle.
+    """Iterate over all handles in front/behind the active window handle.
+
     Args:
         current_handle (List[int]): singleton list containing active window
         direction (str): next/previous for search direciton.
     Returns:
-        half_handles_list (List[int]): collected list of handles."""
+        half_handles_list (List[int]): collected list of handles.
+    """
     if direction == "next":
         direction_int = 3
     elif direction == "previous":
@@ -96,12 +106,14 @@ def get_half_handles(current_handle: List[int], direction: str) -> List[int]:
 
 
 def filter_handles_by_exe_name(list_of_handles):
-    """Helper function to remove all handles that do not originate from ScummVM
+    """Remove all handles that do not originate from ScummVM, helper function.
+
     Args:
         list_of_handles (List[int]): List of all handles
     Returns:
         scummvm_handles (List[int]): List of handles belonging to ScummVM.
-        handles_dict (Dict{int:str}): dictionary assigning handle to game name."""
+        handles_dict (Dict{int:str}): dictionary assigning handle to game name.
+    """
     scummvm_handles = []
     dosbox_handles = []
     handles_dict = {}
@@ -129,7 +141,9 @@ def filter_handles_by_exe_name(list_of_handles):
 
 
 def get_process_id_from_handle(handle: int):
-    """Gets process id from the window handle. Required to find exe
+    """Get process id from the window handle.
+
+    Required to find exe
     Args:
         handle (int): handle to obtain id from
     Returns:
@@ -140,7 +154,7 @@ def get_process_id_from_handle(handle: int):
 
 
 def get_exe_from_process_id(ident_b) -> str:
-    """Gets the process handle from the PID, returns string of exe"""
+    """Get the process handle from the PID, return string of exe."""
     process_handle_b = api.OpenProcess(QUERY_INFO | VM_READ, False, ident_b)
     exe_name = processes.GetModuleFileNameEx(process_handle_b, 0)
     return exe_name
