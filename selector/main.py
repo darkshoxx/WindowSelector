@@ -17,19 +17,66 @@ import pywintypes
 
 SHELL = the_client.Dispatch("WScript.Shell")
 ABORT = False
+
+# Classes
+class Window:
+    """Class that generates window data from the handle.
+
+    Args:
+        handle (int): handle ID of the window
+    """
+
+    def __init__(self, handle: int, label: str = None) -> None:
+        """Set handle, get label from handle if None."""
+        self.handle = handle
+        self.label = label
+        if not self.label:
+            self.label = gui.GetWindowText(handle)
+
+    def __repr__(self):
+        return self.label
+
+    def window_to_listbox_entry(self):
+        return (self.label, "Window handle:", self.handle)
+
+
+def listbox_entry_to_window(window_tuple: Tuple[str,int])->Window:
+    return Window(handle=window_tuple[2])
+
+
+class Game(Window):
+    """Class that generates game data from window handle.
+
+    Args:
+        handle (int): handle ID of the window
+    """
+
+    def __init__(self, handle, label: str = None) -> None:
+        """Inherit from Window: set handle, get label from handle."""
+        super().__init__(handle, label)
+
+    def set_button(self, keypress: str) -> None:
+        """Set the button association in keypress class variable."""
+        self.button = keypress
+
+    def get_button(self) -> str:
+        """Get the button association from keypress class variable."""
+        return self.button
+
+
 # Functions
-def get_list_of_window_titles_and_handles() -> List[Tuple[str, int]]:
+def get_list_of_windows() -> List[Window]:
     """Get list of all handles with window names."""
     handles = get_all_handles()
-    window_tuple_list = []
+    window_list = []
     for handle in handles:
         window_text = gui.GetWindowText(handle)
         if window_text not in LIST_OF_WRONG_WINDOWS:
-            print(f"This Window has and window_text {window_text}")
-            window_tuple_list.append((window_text, handle))
-    window_tuple_list.sort(key=lambda x: x[0].lower())
-    print(window_tuple_list)
-    return window_tuple_list
+            # print(f"This Window has and window_text {window_text}") 43ewrrrr# TODO:Log
+            window_list.append(Window(handle=handle, label=window_text))
+    window_list.sort(key=lambda x: x.label.lower())
+    # print(window_list)
+    return window_list
 
 def add_games_to_display_list(listbox: Listbox, games_listbox: Listbox) -> None:
     """Add games from listbox to games_listbox.
@@ -42,8 +89,8 @@ def add_games_to_display_list(listbox: Listbox, games_listbox: Listbox) -> None:
     selected = listbox.curselection()
     # add selected
     for index in selected:
-        game_data = listbox.get(index)
-        games_listbox.insert(0, game_data)
+        window_data = listbox.get(index)
+        games_listbox.insert(0, window_data)
     # remove selected in reversed order
     for index in reversed(selected):
         listbox.delete(index)
@@ -73,15 +120,15 @@ def remove_unmatched_games(
     # get search term
     search_term = search_entrybox.get().lower()
     # find match games
-    good_games = [
-        game
-        for game in search_games_listbox.get(0, END)
-        if search_term in game[0].lower()
+    good_windows = [
+        window_tuple
+        for window_tuple in search_games_listbox.get(0, END)
+        if search_term in window_tuple[0].lower()
     ]
     # remove nonmatched windows
     search_games_listbox.delete(0, END)
-    for game in good_games:
-        search_games_listbox.insert(0, game)
+    for window in good_windows:
+        search_games_listbox.insert(0, window)
 
 def store_list_and_destroy_root(listbox: Listbox, root: Tk):
     """Store game list and destroy root frame.
@@ -92,13 +139,13 @@ def store_list_and_destroy_root(listbox: Listbox, root: Tk):
     Globals:
         FINAL_GAMES_LIST (List): Final games list to store games in
     """
-    all_games = listbox.get(0, END)
+    all_windows = listbox.get(0, END)
     # TODO: yeah maybe avoid global if possible.
     global FINAL_GAMES_LIST
-    FINAL_GAMES_LIST = all_games
+    FINAL_GAMES_LIST = [Game(window[21]) for window in all_windows]
     root.destroy()
 
-def switch_to_game(next_game: Tuple[str, int]) -> None:
+def switch_to_game(next_game: Game) -> None:
     """Switch to given game.
 
     Args:
@@ -106,7 +153,7 @@ def switch_to_game(next_game: Tuple[str, int]) -> None:
     """
     try:
         SHELL.SendKeys("%")
-        gui.SetForegroundWindow(next_game[1])
+        gui.SetForegroundWindow(next_game.handle)
     except pywintypes.error as e:
         print(e)
         if e.winerror == 1400:
@@ -123,7 +170,7 @@ def start_runner() -> None:
         current_keypress = keyboard.read_event().name
         if current_keypress in BUTTON_TO_ACTION_DICT.keys():
             next_game = BUTTON_TO_ACTION_DICT[current_keypress]
-            game_died = bool(check_for_active_handles([next_game[1]]))
+            game_died = bool(check_for_active_handles([next_game.handle]))
             if game_died:
                 game_is_alive_dict[next_game] = False
             else:
@@ -145,9 +192,9 @@ def abort_all(root: Tk):
     root.destroy()
 
 
-BUTTON_TO_ACTION_DICT = {}
-EXE_LIST = get_list_of_window_titles_and_handles()
-FINAL_GAMES_LIST = []
+BUTTON_TO_ACTION_DICT: dict[str,Game] = {}
+EXE_LIST: List[Window] = get_list_of_windows()
+FINAL_GAMES_LIST: List[Game] = []
 
 def make_scrollable_listbox(
     parent: Frame,
@@ -264,33 +311,37 @@ def draw_game_selection_frame() -> None:
     add_search_frame_button.pack(side=BOTTOM, expand=True)
 
     def update_active_windows_task():
-        game_tuple = get_active_text_and_handle()
-        if game_tuple not in recently_active_windows_list:
-            recently_active_windows_list.append(game_tuple)
+        current_window = get_active_window()
+        if current_window not in recently_active_windows_list:
+            recently_active_windows_list.append(current_window)
         root.after(1000, update_active_windows_task)
 
     root.after(1000, update_active_windows_task)
     root.mainloop()
 
-def refresh_content(listbox: Listbox, content: List[str]) -> None:
+def refresh_content(listbox: Listbox, content: List[Window]) -> None:
     """Refresh content of listbox.
 
     Args:
         listbox (Listbox): listbox to refresh
-        content (List[str]): contents to put in listbox
+        content (List[Window]): contents to put in listbox
     """
     listbox.delete(0, END)
-    listbox.insert(0, *content)
+    # requires conversion to tuples, because TKinter does not allow arbitrary
+    # classes. It allows int, str, tuple and combinations. It does not allow
+    # List, bool or dict.
+    content_tuples = [window.window_to_listbox_entry() for window in content]
+    listbox.insert(0, *content_tuples)
 
 def make_scrollable_searchbox(
     parent: Frame,
-    content: List[str] = None
+    content: List[Window] = None
 ) -> Listbox:
     """Make a scrollable searchbox.
 
     Args:
         parent (Frame): parent frame to attach searchbar
-        content (List[str]): Things to fill the listbox with
+        content (List[Window]): Things to fill the listbox with
     Returns:
         search_games_listbox (Listbox): updated listbox
     """
@@ -343,11 +394,16 @@ def check_uniqueness_and_destroy_root(root: Tk) -> None:
         for widget in root.winfo_children()
         if type(widget) == Button
     ][:-1]
-    if len(set(all_button_labels)) == len(all_button_labels):
-        global BUTTON_TO_ACTION_DICT
-        for button, game in zip(all_button_labels, FINAL_GAMES_LIST):
-            BUTTON_TO_ACTION_DICT[str(button)] = game
-        root.destroy()
+    ready_for_destruction = False
+    while not ready_for_destruction:
+        if len(set(all_button_labels)) == len(all_button_labels):
+            global BUTTON_TO_ACTION_DICT
+            for button, game in zip(all_button_labels, FINAL_GAMES_LIST):
+                BUTTON_TO_ACTION_DICT[str(button)] = game
+            ready_for_destruction = True
+            root.destroy()
+        else:
+            print("Buttons must be unique! Please ensure unique button per game!")
 
 def assign_button_to_button(button_object: Button) -> None:
     """Assign a keyboard key to a button.
@@ -399,15 +455,14 @@ def draw_button_selection_frame() -> None:
     root.mainloop()
 
 
-def get_active_text_and_handle() -> Tuple[str, int]:
+def get_active_window() -> Window:
     """Get label and handle of active window.
 
     Returns:
-        game_tuple (Tuple[str, int]): current active window
+        (Window): current active window
     """
     handle = gui.GetForegroundWindow()
-    text = gui.GetWindowText(handle)
-    return (text, handle)
+    return Window(handle)
 
 
 if __name__ == "__main__":

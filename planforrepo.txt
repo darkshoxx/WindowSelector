@@ -29,11 +29,14 @@ X run, with status window of log of current and previous selections
 - Cleanup
     X Flake8
     - Comments
+    - logger
     X Docstrings
     X Type Annotations
     - Proper Readme file
     - TESTING
-    - Create Class for Games
+    X Create Class for Games
+        - fix bug invalid command name "1683519614464update_active_windows_task"
+        - add key functionality to Game class
     - Create GitHub Action to create Release
     - Make Tox Bullshot
     - Precommit YUCK
