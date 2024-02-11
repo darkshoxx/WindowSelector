@@ -57,6 +57,20 @@ def write_to_file(string: str, filename: str) -> None:
     with open(filename, mode="w") as file_object:
         file_object.write(string)
 
+def read_from_file(filename: str) -> str:
+    """Write contents to file.
+
+    Overwrite the text in a file that exists, or create said file with that
+        content.
+    Args:
+        string (str): text to be written to file.
+        filename (str): string of path to file, or just filename.
+    Returns:
+        None
+    """
+    with open(filename, mode="r") as file_object:
+        file_content = file_object.read()
+    return file_content
 
 def get_all_handles() -> List:
     """Return a list of all handles.

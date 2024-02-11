@@ -35,7 +35,8 @@ X run, with status window of log of current and previous selections
     - Proper Readme file
     - TESTING
     X Create Class for Games
-        - fix bug invalid command name "1683519614464update_active_windows_task"
+        I fix bug invalid command name "1683519614464update_active_windows_task"
+            - Added colourful comment. Best solution is to briefly turn off stdout.
         - add key functionality to Game class
     - Create GitHub Action to create Release
     - Make Tox Bullshot

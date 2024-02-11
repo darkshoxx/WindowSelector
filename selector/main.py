@@ -6,6 +6,8 @@ from tkinter import (
 from typing import List, Tuple
 from utils import (
     LIST_OF_WRONG_WINDOWS,
+    write_to_file,
+    read_from_file,
     check_for_active_handles,
     get_all_handles,
     gui
@@ -14,11 +16,19 @@ from runner import the_client
 from functools import partial
 import keyboard
 import pywintypes
-
+import os
 SHELL = the_client.Dispatch("WScript.Shell")
 ABORT = False
-
+HERE = os.path.abspath(os.path.dirname(__file__))
+CONFIGFILE = os.path.join(HERE, "config.txt")
 # Classes
+
+# colours, using ANSI escape sequences
+
+class bcolours:
+    GREEN = '\033[92m'
+    DEFAULT = '\033[0m'
+
 class Window:
     """Class that generates window data from the handle.
 
@@ -40,7 +50,7 @@ class Window:
         return (self.label, "Window handle:", self.handle)
 
 
-def listbox_entry_to_window(window_tuple: Tuple[str,int])->Window:
+def listbox_entry_to_window(window_tuple: Tuple[str,int]) -> Window:
     return Window(handle=window_tuple[2])
 
 
@@ -65,6 +75,14 @@ class Game(Window):
 
 
 # Functions
+def load_config_from_file(root):
+    file_contents = read_from_file(CONFIGFILE)
+    handles = [int(handle_string) for handle_string in file_contents.split() if handle_string]
+    global FINAL_GAMES_LIST
+    FINAL_GAMES_LIST = [Game(handle) for handle in handles]
+    root.destroy()
+
+
 def get_list_of_windows() -> List[Window]:
     """Get list of all handles with window names."""
     handles = get_all_handles()
@@ -142,7 +160,9 @@ def store_list_and_destroy_root(listbox: Listbox, root: Tk):
     all_windows = listbox.get(0, END)
     # TODO: yeah maybe avoid global if possible.
     global FINAL_GAMES_LIST
-    FINAL_GAMES_LIST = [Game(window[21]) for window in all_windows]
+    FINAL_GAMES_LIST = [Game(window[2]) for window in all_windows]
+    to_file = "".join([str(entry.handle) + "\n" for entry in FINAL_GAMES_LIST])
+    write_to_file(to_file, CONFIGFILE)
     root.destroy()
 
 def switch_to_game(next_game: Game) -> None:
@@ -223,16 +243,16 @@ def make_scrollable_listbox(
 
 def draw_game_selection_frame() -> None:
     """Draw the game selection frame."""
-    root = Tk()
-    root.title("Window Selector Config")
-    root.geometry("600x450")
+    root_1 = Tk()
+    root_1.title("Window Selector Config")
+    root_1.geometry("600x450")
 
     # root = prep + gdf
-    prep_frame = Frame(root)
+    prep_frame = Frame(root_1)
     prep_frame.pack(side=TOP, expand=True)
 
     # GDF = listbox + remove + confirm
-    game_display_frame = Frame(root)
+    game_display_frame = Frame(root_1)
     game_display_frame.pack(side=BOTTOM, expand=True)
     # scrollable listbox
     games_listbox, _ = make_scrollable_listbox(game_display_frame)
@@ -247,21 +267,25 @@ def draw_game_selection_frame() -> None:
         game_display_frame,
         text="Confirm Games",
         bg='green',
-        command=partial(store_list_and_destroy_root, games_listbox, root)
+        command=partial(store_list_and_destroy_root, games_listbox, root_1)
     )
     confirm_games_button.pack(side=RIGHT, expand=True)
     abort_button = Button(
         game_display_frame,
         bg='red',
         text="ABORT ALL!",
-        command=partial(abort_all, root)
+        command=partial(abort_all, root_1)
     )
     abort_button.pack(side=RIGHT, expand=True)
 
     # prep = load + adders
     load_frame = Frame(prep_frame)
     load_frame.pack(side=TOP, expand=True)
-    load_button = Button(load_frame, text="Load from file", command=None)
+    load_button = Button(
+        load_frame,
+        text="Load from file",
+        command=partial(load_config_from_file, root_1)
+    )
     load_button.pack(expand=True)
     adder_frame = Frame(prep_frame)
     adder_frame.pack(side=BOTTOM, expand=True)
@@ -310,14 +334,18 @@ def draw_game_selection_frame() -> None:
     )
     add_search_frame_button.pack(side=BOTTOM, expand=True)
 
+
     def update_active_windows_task():
+
         current_window = get_active_window()
         if current_window not in recently_active_windows_list:
             recently_active_windows_list.append(current_window)
-        root.after(1000, update_active_windows_task)
+        root_1.after(100, update_active_windows_task)
 
-    root.after(1000, update_active_windows_task)
-    root.mainloop()
+    root_1.after(100, update_active_windows_task)
+    root_1.protocol("WM_DELETE_WINDOW", partial(abort_all, root_1))
+    root_1.mainloop()
+
 
 def refresh_content(listbox: Listbox, content: List[Window]) -> None:
     """Refresh content of listbox.
@@ -419,10 +447,10 @@ def assign_button_to_button(button_object: Button) -> None:
 def draw_button_selection_frame() -> None:
     """Draw frame to assign buttons to windows."""
     number_of_games = len(FINAL_GAMES_LIST)
-    root = Tk()
-    root.title("Button Selector Config")
+    root_2 = Tk()
+    root_2.title("Button Selector Config")
     info_box = Label(
-        root,
+        root_2,
         text=f"There are {number_of_games} games."
         + "Please choose a key for each game."
     )
@@ -430,29 +458,29 @@ def draw_button_selection_frame() -> None:
     # list_of_game_rows = []
     for index, game in enumerate(FINAL_GAMES_LIST):
         # create game column
-        game_box = Label(root, text=game)
+        game_box = Label(root_2, text=game)
         game_box.grid(row=index + 1, column=0)
         # create button column
-        button_button = Button(root, text=index + 1, command=None)
+        button_button = Button(root_2, text=index + 1, command=None)
         button_button.configure(
             command=partial(assign_button_to_button, button_button)
         )
         button_button.grid(row=index + 1, column=1)
     confirm_buttons_button = Button(
-        root,
+        root_2,
         text="Confirm Buttons",
         bg='green',
-        command=partial(check_uniqueness_and_destroy_root, root))
+        command=partial(check_uniqueness_and_destroy_root, root_2))
     confirm_buttons_button.grid(row=number_of_games + 1, column=0, columnspan=1)
     abort_button = Button(
-        root,
+        root_2,
         bg='red',
         text="ABORT ALL!",
-        command=partial(abort_all, root)
+        command=partial(abort_all, root_2)
     )
     abort_button.grid(row=number_of_games + 1, column=1)
 
-    root.mainloop()
+    root_2.mainloop()
 
 
 def get_active_window() -> Window:
@@ -467,7 +495,14 @@ def get_active_window() -> Window:
 
 if __name__ == "__main__":
     draw_game_selection_frame()
+
     if not ABORT:
+        print(bcolours.GREEN
+            + "Please ignore the \"invalid command name "
+            + "LONGNUMBERupdate_active_windows_task\" error, it's a "
+            + "badly handled error by the package that draws the windows"
+            + "(Tkinter)" + bcolours.DEFAULT
+            )
         draw_button_selection_frame()
     print(BUTTON_TO_ACTION_DICT)
     if not ABORT:
